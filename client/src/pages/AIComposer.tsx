@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react"
 import { PLATFORMS } from "../assets/assets";
+import api from "../api/axios";
+import { toast } from "react-hot-toast";
 
 import { ArrowRightIcon,TimerIcon,CalendarIcon, Loader2Icon, HistoryIcon, Wand2Icon,XIcon, ClockIcon} from "lucide-react"
-import { dummyGenerationData } from "../assets/assets";
+//import { dummyGenerationData } from "../assets/assets";
 const AIComposer = () => {
     const [prompt, setPrompt] = useState("");
 
@@ -26,59 +28,72 @@ const AIComposer = () => {
     const [scheduling, setScheduling] = useState(false);
 
     const fetchGenerations = async () => {
-        setGenerations(dummyGenerationData);
-    }
+        try{
+            const {data} = await api.get("/api/posts/generations")
+            setGenerations(data)
+
+        }catch(error:any){
+            toast.error(error?.response?.data?.message || error?.message );
+
+        }
+    }    
     useEffect(() => {
         fetchGenerations();
     }, [])
 
    const handleGenerate = async () => {
-    if (!prompt) return;
-
-    setLoading(true);
-
-    try {
-        const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/generate-post`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    prompt,
-                    tone,
-                    generateImage,
-                }),
-            }
-        );
-
-        const data = await res.json();
-
-        // Add new generation to UI list
-        setGenerations((prev) => [
-            {
-                _id: Date.now().toString(),
-                createdAt: new Date().toISOString(),
-                tone,
-                content: data.caption,
-                mediaUrl: data.imageUrl,
-                prompt,
-            },
-            ...prev,
-        ]);
-    } catch (err) {
-        console.error("Generate error:", err);
+    if(!prompt){
+        toast.error("Please enter a prompt to generate content")
+        return;
     }
+    setLoading(true)
+    try{
+        const {data} = await api.post("/api/posts/generate",{prompt,tone,generateImage : true});
+        setGenerations([data,...generations]);
+        setActiveScheduler(data)
+        toast.success("Content generated successfully! ")
 
-    setLoading(false);
+
+    }catch(error:any){
+        toast.error(error?.response?.data?.message || error?.message);
+
+    }finally{
+        setLoading(false)
+    }
 };
     const handleSchedule =async ()=>{
-        setScheduling(true)
-        setTimeout(() => {
-            setScheduling(false)
+        if(!activeScheduler)return;
+        if(selectedPlatforms.length === 0){
+            toast.error("Please select at least one platform to schedule the post")
+            return;
+        }
+        if(!scheduledDate || !scheduledTime){
+            toast.error("Please select a valid date and time to schedule the post")
+            return;
+        }
+        const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
+        setScheduling(true);
+        try{
+      await api.post("/api/posts",{
+        content:activeScheduler.content,
+        mediaUrl:activeScheduler.mediaUrl,
+        mediaType:activeScheduler.mediaType,
+        platforms:selectedPlatforms,
+        scheduledFor,
+        status:"scheduled"
+      })
+      toast.success("AI post scheduled!");
+      setActiveScheduler(null);
+      setSelectedPlatforms([]);
+      setScheduledDate("");
+      setScheduledTime("");
+    }catch(error:any){
+      toast.error(error?.response?.data?.message || "Failed to schedule post");
 
-        }, 2000)
+    }finally{
+      setScheduling(false);
+    }
+        
     }
 
     const tones = ["Professional", "Creative", "Funny", "Minimalist", "Excited"];

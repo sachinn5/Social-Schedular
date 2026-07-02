@@ -1,7 +1,7 @@
 import {Response } from "express";
 import { AuthRequest } from "../middlewares/authMiddleware.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import {cloudinary} from "../config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js";
 import { Generation } from "../models/Generation.js";
 import { Post } from "../models/Post.js";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -25,7 +25,7 @@ export const generatePost = async (req: AuthRequest, res: Response):Promise<void
     }
 
     const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
+  model: "gemini-2.5-flash",
 });
 
 const result = await model.generateContent(`

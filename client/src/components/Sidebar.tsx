@@ -1,23 +1,15 @@
 import { CalendarDaysIcon, LayoutDashboardIcon, LogOutIcon, UsersIcon, Wand2Icon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.tsx";
 
 
 const Sidebar = ({
   isOpen,
-  setIsOpen,
-}: {
-  isOpen: boolean;
-  setIsOpen: (val: boolean) => void;
-}) => {
-    const{logout,user}={
-        logout:()=>{
-            window.location.href= "/";
-        },
-        user: {name:"John Doe",email: "johndoe@example.com"}
-    
-    }
+  setIsOpen}: {isOpen: boolean, setIsOpen: (value: boolean) => void}) => {
+    const {user,logout} = useAuth();
+        
     const location =useLocation();
-    const navItems =[
+     const navItems =[
         {name: "Dashboard", icon: LayoutDashboardIcon,path:"/dashboard"},
         {name: "Accounts", icon: UsersIcon,path:"/accounts"},
         {name: "Scheduler", icon: CalendarDaysIcon, path:"/schedule"},
